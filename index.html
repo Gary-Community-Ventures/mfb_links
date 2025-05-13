@@ -102,7 +102,8 @@
             { value: "co", text: "Colorado" },
             { value: "nc", text: "North Carolina" },
             { value: "ma", text: "Massachusetts" },
-            { value: "energy_calculator", text: "Energy Calculator" }
+            // Updated energy_calculator to co_energy_calculator
+            { value: "co_energy_calculator", text: "CO Energy Calculator" }
         ];
 
         // --- DOM Elements ---
@@ -178,8 +179,9 @@
             }
             
             // Determine the path segment based on the white label
-            if (selectedWhiteLabel === "energy_calculator") {
-                generatedUrl += `/landing-page`; // Specific path for energy_calculator
+            // Updated to check for "co_energy_calculator"
+            if (selectedWhiteLabel === "co_energy_calculator") {
+                generatedUrl += `/landing-page`; // Specific path for co_energy_calculator
             } else {
                 generatedUrl += `/step-1`; // Default path for others
             }
