@@ -28,7 +28,7 @@
         #generatedLink a:hover {
             color: #2563eb; /* Tailwind blue-600 */
         }
-        .form-input, .form-select, .btn { /* Added .btn for the new button */
+        .form-input, .form-select, .btn {
             border-radius: 0.375rem; /* Tailwind rounded-md */
         }
         .card {
@@ -147,6 +147,7 @@
             const referrerValue = referrerInput.value;
             const isTestMode = testCheckbox.checked;
             
+            // Basic validation
             if (!selectedDomain) {
                 displayMessage("Please select a domain.", "error");
                 generatedLinkElement.textContent = "Please select a domain.";
@@ -162,17 +163,26 @@
             clearMessage();
             copyButton.classList.remove('hidden'); // Show copy button when link is valid
 
+            // Handle localhost port
             if (selectedDomain === "http://localhost") {
                 const portValue = portInput.value.trim();
+                // Use default port 3000 if input is empty or not a valid number
                 const port = (portValue && !isNaN(portValue) && Number(portValue) > 0) ? portValue : "3000";
-                selectedDomain = `${selectedDomain}:${port}`;
+                selectedDomain = `${selectedDomain}:${port}`; // Append port to localhost domain
             }
 
-            let generatedUrl = selectedDomain;
+            // Construct the URL
+            let generatedUrl = selectedDomain; // selectedDomain now includes port if localhost
             if (selectedWhiteLabel) {
                 generatedUrl += `/${selectedWhiteLabel.replace(/^\/+|\/+$/g, '')}`;
             }
-            generatedUrl += `/step-1`;
+            
+            // Determine the path segment based on the white label
+            if (selectedWhiteLabel === "energy_calculator") {
+                generatedUrl += `/landing-page`; // Specific path for energy_calculator
+            } else {
+                generatedUrl += `/step-1`; // Default path for others
+            }
 
             const queryParams = new URLSearchParams();
             if (referrerValue.trim() !== '') {
@@ -182,11 +192,13 @@
                 queryParams.append('test', 'true');
             }
 
+            // Append query string only if there are parameters
             if (queryParams.toString()) {
                 generatedUrl += `?${queryParams.toString()}`;
             }
 
-            generatedLinkElement.innerHTML = '';
+            // Display the generated link
+            generatedLinkElement.innerHTML = ''; // Clear previous content
             const linkAnchor = document.createElement('a');
             linkAnchor.href = generatedUrl;
             linkAnchor.textContent = generatedUrl;
@@ -197,10 +209,10 @@
 
         // --- Event Listeners ---
         domainDropdown.addEventListener('change', () => {
-            togglePortInputVisibility();
-            updateGeneratedLink();
+            togglePortInputVisibility(); // Show/hide port input
+            updateGeneratedLink();      // Then update the link
         });
-        portInput.addEventListener('input', updateGeneratedLink);
+        portInput.addEventListener('input', updateGeneratedLink); // Update link on port change
         whiteLabelDropdown.addEventListener('change', updateGeneratedLink);
         referrerInput.addEventListener('input', updateGeneratedLink);
         testCheckbox.addEventListener('change', updateGeneratedLink);
@@ -235,13 +247,13 @@
         // --- Function to display messages ---
         function displayMessage(message, type) {
             messageBox.textContent = message;
-            messageBox.className = 'block mt-4 p-3 rounded-md text-sm';
+            messageBox.className = 'block mt-4 p-3 rounded-md text-sm'; // Reset classes
             if (type === 'error') {
                 messageBox.classList.add('bg-red-100', 'text-red-700', 'border', 'border-red-300');
             } else if (type === 'success') {
                 messageBox.classList.add('bg-green-100', 'text-green-700', 'border', 'border-green-300');
             }
-            messageBox.classList.remove('hidden');
+            messageBox.classList.remove('hidden'); // Show the message box
 
             // Auto-hide messages after some time
             const duration = (type === 'success') ? 2000 : 3000; // Shorter for success
@@ -259,20 +271,21 @@
                 (!messageBox.textContent.includes("copied") && !messageBox.classList.contains('hidden'))) {
                  messageBox.classList.add('hidden');
                  messageBox.textContent = '';
-                 messageBox.className = 'hidden mt-4 p-3 rounded-md text-sm';
+                 messageBox.className = 'hidden mt-4 p-3 rounded-md text-sm'; // Reset classes
             }
         }
 
         // --- Initial Setup ---
+        // Pre-select the first option by default if available
         if (domainOptions.length > 0 && domainDropdown.options.length > 0) {
-            domainDropdown.value = domainOptions[0].value;
+            domainDropdown.value = domainOptions[0].value; // Default to first domain
         }
         if (whiteLabelOptions.length > 0 && whiteLabelDropdown.options.length > 0) {
-            whiteLabelDropdown.value = whiteLabelOptions[0].value;
+            whiteLabelDropdown.value = whiteLabelOptions[0].value; // Default to first white label
         }
         
-        togglePortInputVisibility();
-        updateGeneratedLink();
+        togglePortInputVisibility(); // Check if port input should be visible on load
+        updateGeneratedLink();       // Generate the link for the first time on page load
     </script>
 </body>
 </html>
