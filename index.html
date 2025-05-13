@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Link Generator - Auto Update</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Tailwind gray-100 */
+        }
+        #generatedLinkContainer {
+            word-break: break-all;
+            display: flex; /* Align link and button */
+            align-items: center; /* Vertically align items */
+            gap: 0.5rem; /* Space between link and button */
+        }
+        #generatedLink {
+            flex-grow: 1; /* Link takes available space */
+        }
+        #generatedLink a {
+            color: #3b82f6; /* Tailwind blue-500 */
+            text-decoration: underline;
+        }
+        #generatedLink a:hover {
+            color: #2563eb; /* Tailwind blue-600 */
+        }
+        .form-input, .form-select, .btn { /* Added .btn for the new button */
+            border-radius: 0.375rem; /* Tailwind rounded-md */
+        }
+        .card {
+            border-radius: 0.5rem; /* Tailwind rounded-lg */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
+        }
+        /* Class to hide elements */
+        .hidden {
+            display: none;
+        }
+        /* Styling for the copy button */
+        #copyButton {
+            padding: 0.5rem 0.75rem;
+            transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 p-4">
+
+    <div class="card bg-white p-6 sm:p-8 md:p-10 w-full max-w-lg">
+        <h1 class="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-gray-800">Generate Your Link (Auto-Updating)</h1>
+
+        <form id="linkForm" class="space-y-6">
+            <div>
+                <label for="domain" class="block text-sm font-medium text-gray-700 mb-1">Domain:</label>
+                <select id="domain" name="domain" class="form-select w-full p-3 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    </select>
+            </div>
+
+            <div id="portInputContainer" class="hidden">
+                <label for="port" class="block text-sm font-medium text-gray-700 mb-1">Port (for Localhost):</label>
+                <input type="number" id="port" name="port" class="form-input w-full p-3 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" value="3000" placeholder="3000">
+            </div>
+
+            <div>
+                <label for="whiteLabel" class="block text-sm font-medium text-gray-700 mb-1">White Label:</label>
+                <select id="whiteLabel" name="whiteLabel" class="form-select w-full p-3 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    </select>
+            </div>
+
+            <div>
+                <label for="referrer" class="block text-sm font-medium text-gray-700 mb-1">Referrer:</label>
+                <input type="text" id="referrer" name="referrer" class="form-input w-full p-3 border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="e.g., mycampaign123">
+            </div>
+
+            <div class="flex items-center">
+                <input id="test" name="test" type="checkbox" class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                <label for="test" class="ml-2 block text-sm text-gray-900">Test Mode</label>
+            </div>
+        </form>
+
+        <div class="mt-6 sm:mt-8 p-4 bg-gray-50 border border-gray-200 rounded-md min-h-[60px] flex flex-col items-center justify-center">
+            <div id="generatedLinkContainer" class="w-full">
+                <p id="generatedLink" class="text-sm text-gray-700 text-center">Your link will appear here.</p>
+                <button type="button" id="copyButton" title="Copy to Clipboard" class="btn bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-2 flex-shrink-0">
+                    <i class="far fa-copy"></i> </button>
+            </div>
+        </div>
+         <div id="messageBox" class="hidden mt-4 p-3 rounded-md text-sm"></div>
+    </div>
+
+    <script>
+        // --- Configuration for Dropdowns ---
+        const domainOptions = [
+            { value: "https://screener.myfriendben.org", text: "Prod (screener.myfriendben.org)" },
+            { value: "https://benefits-calculator-staging.herokuapp.com", text: "Staging (benefits-calculator-staging.herokuapp.com)" },
+            { value: "http://localhost", text: "Local (localhost - port configurable)" }
+        ];
+
+        const whiteLabelOptions = [
+            { value: "co", text: "Colorado" },
+            { value: "nc", text: "North Carolina" },
+            { value: "ma", text: "Massachusetts" },
+            { value: "energy_calculator", text: "Energy Calculator" }
+        ];
+
+        // --- DOM Elements ---
+        const domainDropdown = document.getElementById('domain');
+        const portInputContainer = document.getElementById('portInputContainer');
+        const portInput = document.getElementById('port');
+        const whiteLabelDropdown = document.getElementById('whiteLabel');
+        const referrerInput = document.getElementById('referrer');
+        const testCheckbox = document.getElementById('test');
+        const generatedLinkElement = document.getElementById('generatedLink');
+        const copyButton = document.getElementById('copyButton');
+        const messageBox = document.getElementById('messageBox');
+
+        // --- Populate Dropdowns ---
+        function populateDropdown(selectElement, options) {
+            selectElement.innerHTML = '';
+            options.forEach(optionData => {
+                const option = document.createElement('option');
+                option.value = optionData.value;
+                option.textContent = optionData.text;
+                selectElement.appendChild(option);
+            });
+        }
+
+        populateDropdown(domainDropdown, domainOptions);
+        populateDropdown(whiteLabelDropdown, whiteLabelOptions);
+
+        // --- Function to toggle Port Input Visibility ---
+        function togglePortInputVisibility() {
+            const selectedDomain = domainDropdown.value;
+            if (selectedDomain === "http://localhost") {
+                portInputContainer.classList.remove('hidden');
+            } else {
+                portInputContainer.classList.add('hidden');
+            }
+        }
+
+        // --- Function to Generate and Update Link ---
+        function updateGeneratedLink() {
+            let selectedDomain = domainDropdown.value;
+            const selectedWhiteLabel = whiteLabelDropdown.value;
+            const referrerValue = referrerInput.value;
+            const isTestMode = testCheckbox.checked;
+            
+            if (!selectedDomain) {
+                displayMessage("Please select a domain.", "error");
+                generatedLinkElement.textContent = "Please select a domain.";
+                copyButton.classList.add('hidden'); // Hide copy button if no link
+                return;
+            }
+            if (!selectedWhiteLabel) {
+                displayMessage("Please select a white label.", "error");
+                generatedLinkElement.textContent = "Please select a white label.";
+                copyButton.classList.add('hidden'); // Hide copy button if no link
+                return;
+            }
+            clearMessage();
+            copyButton.classList.remove('hidden'); // Show copy button when link is valid
+
+            if (selectedDomain === "http://localhost") {
+                const portValue = portInput.value.trim();
+                const port = (portValue && !isNaN(portValue) && Number(portValue) > 0) ? portValue : "3000";
+                selectedDomain = `${selectedDomain}:${port}`;
+            }
+
+            let generatedUrl = selectedDomain;
+            if (selectedWhiteLabel) {
+                generatedUrl += `/${selectedWhiteLabel.replace(/^\/+|\/+$/g, '')}`;
+            }
+            generatedUrl += `/step-1`;
+
+            const queryParams = new URLSearchParams();
+            if (referrerValue.trim() !== '') {
+                queryParams.append('referrer', referrerValue.trim());
+            }
+            if (isTestMode) {
+                queryParams.append('test', 'true');
+            }
+
+            if (queryParams.toString()) {
+                generatedUrl += `?${queryParams.toString()}`;
+            }
+
+            generatedLinkElement.innerHTML = '';
+            const linkAnchor = document.createElement('a');
+            linkAnchor.href = generatedUrl;
+            linkAnchor.textContent = generatedUrl;
+            linkAnchor.target = "_blank";
+            linkAnchor.rel = "noopener noreferrer";
+            generatedLinkElement.appendChild(linkAnchor);
+        }
+
+        // --- Event Listeners ---
+        domainDropdown.addEventListener('change', () => {
+            togglePortInputVisibility();
+            updateGeneratedLink();
+        });
+        portInput.addEventListener('input', updateGeneratedLink);
+        whiteLabelDropdown.addEventListener('change', updateGeneratedLink);
+        referrerInput.addEventListener('input', updateGeneratedLink);
+        testCheckbox.addEventListener('change', updateGeneratedLink);
+
+        // --- Copy to Clipboard Functionality ---
+        copyButton.addEventListener('click', () => {
+            const linkAnchor = generatedLinkElement.querySelector('a');
+            if (linkAnchor && linkAnchor.href) {
+                const linkToCopy = linkAnchor.href;
+                navigator.clipboard.writeText(linkToCopy).then(() => {
+                    // Success feedback
+                    copyButton.innerHTML = '<i class="fas fa-check"></i>'; // Checkmark icon
+                    copyButton.classList.remove('bg-gray-200', 'hover:bg-gray-300', 'text-gray-700');
+                    copyButton.classList.add('bg-green-500', 'text-white');
+                    
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="far fa-copy"></i>'; // Revert to copy icon
+                        copyButton.classList.remove('bg-green-500', 'text-white');
+                        copyButton.classList.add('bg-gray-200', 'hover:bg-gray-300', 'text-gray-700');
+                    }, 2000); // Revert after 2 seconds
+                    displayMessage("Link copied to clipboard!", "success");
+                }).catch(err => {
+                    console.error('Failed to copy link: ', err);
+                    displayMessage("Failed to copy. Please try again or copy manually.", "error");
+                });
+            } else {
+                displayMessage("No link generated yet to copy.", "error");
+            }
+        });
+
+
+        // --- Function to display messages ---
+        function displayMessage(message, type) {
+            messageBox.textContent = message;
+            messageBox.className = 'block mt-4 p-3 rounded-md text-sm';
+            if (type === 'error') {
+                messageBox.classList.add('bg-red-100', 'text-red-700', 'border', 'border-red-300');
+            } else if (type === 'success') {
+                messageBox.classList.add('bg-green-100', 'text-green-700', 'border', 'border-green-300');
+            }
+            messageBox.classList.remove('hidden');
+
+            // Auto-hide messages after some time
+            const duration = (type === 'success') ? 2000 : 3000; // Shorter for success
+            setTimeout(() => {
+                if (messageBox.textContent === message) { // Only hide if it's still the same message
+                    messageBox.classList.add('hidden');
+                }
+            }, duration);
+        }
+        
+        // --- Function to clear messages ---
+        function clearMessage() {
+            // Clear only if it's an error message or a specific non-copy-success message
+            if (messageBox.classList.contains('bg-red-100') || 
+                (!messageBox.textContent.includes("copied") && !messageBox.classList.contains('hidden'))) {
+                 messageBox.classList.add('hidden');
+                 messageBox.textContent = '';
+                 messageBox.className = 'hidden mt-4 p-3 rounded-md text-sm';
+            }
+        }
+
+        // --- Initial Setup ---
+        if (domainOptions.length > 0 && domainDropdown.options.length > 0) {
+            domainDropdown.value = domainOptions[0].value;
+        }
+        if (whiteLabelOptions.length > 0 && whiteLabelDropdown.options.length > 0) {
+            whiteLabelDropdown.value = whiteLabelOptions[0].value;
+        }
+        
+        togglePortInputVisibility();
+        updateGeneratedLink();
+    </script>
+</body>
+</html>
